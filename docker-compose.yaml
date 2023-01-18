@@ -1,0 +1,53 @@
+version: '3.7'
+
+networks:
+  kafka-spark:
+    driver: bridge
+    ipam:
+      driver: default
+      config: 
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
+
+services:
+  # --------- Kafka Services ---------
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    restart: unless-stopped
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.5
+  
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_CREATE_TOPICS: "wikistream"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.6
+    depends_on:
+      - zookeeper
+  
+  kafka-wikistram:
+    build: 
+      context: services/kafkaWikiStream/
+      dockerfile: Dockerfile.kafkaProducer
+    image: kafka-wikistram
+    container_name: kafka-wikistram
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.7
+    depends_on:
+      - zookeeper
+      - kafka
