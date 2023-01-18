@@ -1,0 +1,9 @@
+FROM python:3.8
+
+WORKDIR /src/
+COPY ./src/ /src/
+
+RUN pip install --no-cache-dir \
+    kafka-python==2.0.2 sseclient==0.0.27
+
+CMD [ "python3", "/src/WikiStream.py"]
