@@ -39,15 +39,66 @@ services:
     depends_on:
       - zookeeper
   
-  kafka-wikistram:
+  kafka-wikistream:
     build: 
       context: services/kafkaWikiStream/
       dockerfile: Dockerfile.kafkaProducer
-    image: kafka-wikistram
-    container_name: kafka-wikistram
+    image: kafka-wikistream
+    container_name: kafka-wikistream
     networks:
       kafka-spark:
         ipv4_address: 172.28.0.7
     depends_on:
       - zookeeper
+      - kafka
+  # --------- Spark Services ---------
+  spark-master:
+    build:
+      context: services/spark/
+      dockerfile: Dockerfile.spark 
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no 
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.8
+    volumes:
+      - ./sparkApps/src/:/opt/bitnami/spark/apps/
+    depends_on:
+      - kafka-wikistream
+    links:
+      - kafka
+  
+  spark-worker:
+    build:
+      context: services/spark/
+      dockerfile: Dockerfile.spark
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker 
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no 
+      - SPARK_RPC_ENCRYPTION_ENABLED=no 
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8081:8081"
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.9
+    volumes:
+      - ./sparkApps/src/:/opt/bitnami/spark/apps/
+    depends_on:
+      - spark-master
+      - kafka-wikistream
+    links:
       - kafka
