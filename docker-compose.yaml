@@ -70,7 +70,8 @@ services:
       kafka-spark:
         ipv4_address: 172.28.0.8
     volumes:
-      - ./sparkApps/src/:/opt/bitnami/spark/apps/
+      - ./sparkApps/:/opt/bitnami/spark/sparkApps/
+      - ./tests/:/opt/bitnami/spark/tests
     depends_on:
       - kafka-wikistream
     links:
@@ -96,7 +97,8 @@ services:
       kafka-spark:
         ipv4_address: 172.28.0.9
     volumes:
-      - ./sparkApps/src/:/opt/bitnami/spark/apps/
+      - ./sparkApps/:/opt/bitnami/spark/sparkApps/
+      - ./tests/:/opt/bitnami/spark/tests
     depends_on:
       - spark-master
       - kafka-wikistream
