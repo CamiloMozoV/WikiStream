@@ -1,7 +1,7 @@
 import pytest
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType
-from sparkApps.src.kafka_spark_consumer import read_kafka_stream
+from sparkApps.src.kafka_spark_consumer import read_kafka_stream, data_schema_stream
 
 @pytest.mark.usefixtures("spark_session")
 def test_read_kafka_stream(spark_session: SparkSession):
@@ -10,3 +10,11 @@ def test_read_kafka_stream(spark_session: SparkSession):
     assert df.columns == ["key", "value", "topic", "partition", "offset", "timestamp", "timestampType"] 
     assert df.schema["key"].dataType == StringType()
     assert df.schema["value"].dataType == StringType()
+
+@pytest.mark.usefixtures("spark_session")
+def test_data_schema_stream(spark_session: SparkSession):
+    raw_df = read_kafka_stream(spark_session)
+    df_wikiStream = data_schema_stream(raw_df)
+
+    data = df_wikiStream.schema.fields[1].jsonValue()["type"]["fields"]
+    assert len(data) == 19
