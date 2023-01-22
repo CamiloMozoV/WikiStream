@@ -8,7 +8,11 @@ from pyspark.sql.types import (
     LongType
 )
 from pyspark.sql.functions import (
-    from_json
+    from_json,
+    col,
+    from_unixtime,
+    to_date,
+    to_timestamp
 )
 
 def read_kafka_stream(spark_session: SparkSession) -> DataFrame:
@@ -68,11 +72,51 @@ def data_schema_stream(df: DataFrame) -> DataFrame:
     df_wikiStream = df.withColumn("value", from_json("value", schema))
     return df_wikiStream
 
+def performs_model_transformation(df: DataFrame) -> DataFrame:
+    """Some transformation like, column renaming, and column conversion
+    unix timestamp to timestamp
+    """
+    df_formatted = df.select(
+        col("value.$schema").alias("schema"),
+        "value.bot",
+        "value.comment",
+        "value.id",
+        col("value.length.new").alias("length_new"),
+        col("value.length.old").alias("length_old"),
+        "value.minor",
+        "value.namespace",
+        "value.parsedcomment",
+        "value.patrolled",
+        col("value.revision.new").alias("revesion_new"),
+        col("value.revision.old").alias("revesion_old"),
+        "value.server_name",
+        "value.server_script_path",
+        "value.server_url",
+        to_timestamp(from_unixtime(col("value.timestamp"))).alias("change_timestamp"),
+        to_date(from_unixtime(col("value.timestamp"))).alias("change_timestamp_date"),
+        "value.title",
+        "value.type",
+        "value.user",
+        "value.wiki",
+        col("value.meta.domain").alias("meta_domain"),
+        col("value.meta.dt").alias("meta_dt"),
+        col("value.meta.id").alias("meta_id"),
+        col("value.meta.offset").alias("meta_offset"),
+        col("value.meta.partition").alias("meta_partition"),
+        col("value.meta.request_id").alias("meta_request_id"),
+        col("value.meta.stream").alias("meta_stream"),
+        col("value.meta.topic").alias("meta_topic"),
+        col("value.meta.uri").alias("meta_uri")
+    ) 
+
+    return df_formatted
+
 def kafka_spark_consumer(spark_session: SparkSession) -> None:
     df_raw = read_kafka_stream(spark_session)
     df_wikiStream = data_schema_stream(df_raw)
-    
-    
+ 
+    df = performs_model_transformation(df_wikiStream)
+    print(len(df.schema))
 
 if __name__=="__main__":
     # Create a session
