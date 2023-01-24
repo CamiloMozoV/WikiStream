@@ -1,3 +1,4 @@
+import os
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import (
     StringType, 
@@ -111,12 +112,23 @@ def performs_model_transformation(df: DataFrame) -> DataFrame:
 
     return df_formatted
 
+def upload_to_minio(df: DataFrame) -> None:
+    
+    df.writeStream\
+        .format("parquet")\
+        .option("path", "s3a://wikistream/stream/")\
+        .option("checkpointLocation", "/opt/bitnami/spark/tmp/checkpoint")\
+        .partitionBy("change_timestamp_date", "server_name")\
+        .outputMode("append")\
+        .start()\
+        .awaitTermination()
+
 def kafka_spark_consumer(spark_session: SparkSession) -> None:
     df_raw = read_kafka_stream(spark_session)
     df_wikiStream = data_schema_stream(df_raw)
  
-    df = performs_model_transformation(df_wikiStream)
-    print(len(df.schema))
+    df_final = performs_model_transformation(df_wikiStream)
+    upload_to_minio(df_final)
 
 if __name__=="__main__":
     # Create a session
@@ -125,9 +137,18 @@ if __name__=="__main__":
                     .master("spark://spark-master:7077")\
                     .config("spark.jars", "/opt/bitnami/spark/jars/spark-sql-kafka-0-10_2.12-3.3.0.jar")\
                     .config("spark.jars", "/opt/bitnami/spark/jars/spark-streaming-kafka-0-10_2.12-3.3.0.jar")\
+                    .config("spark.jars", "/opt/bitnami/spark/jars/hadoop-aws-3.3.4.jar") \
+                    .config("spark.jars", "/opt/bitnami/spark/jars/aws-java-sdk-1.12.319.jar")\
+                    .config("spark.jars", "/opt/bitnami/spark/jars/hadoop-common-3.3.4.jar")\
+                    .config("spark.jars", "/opt/bitnami/spark/jars/hadoop-client-3.3.4.jar")\
+                    .config("spark.jars", "/opt/bitnami/spark/jars/aws-java-sdk-s3-1.12.319.jar")\
                     .config("spark.sql.adaptive.enable", False)\
                     .getOrCreate()
     
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key", "testadmin")
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", "testadminpwd")
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "http://172.28.0.10:9000")
+
     spark_sesion.sparkContext.setLogLevel("WARN")
     kafka_spark_consumer(spark_sesion)
     spark_sesion.stop()

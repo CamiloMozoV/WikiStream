@@ -76,7 +76,7 @@ services:
       - kafka-wikistream
     links:
       - kafka
-  
+
   spark-worker:
     build:
       context: services/spark/
@@ -104,3 +104,21 @@ services:
       - kafka-wikistream
     links:
       - kafka
+    
+  # --------- Spark Services ---------
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=testadmin
+      - MINIO_ROOT_PASSWORD=testadminpwd
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      kafka-spark:
+        ipv4_address: 172.28.0.10
+    volumes:
+      - ./storageWikiStream:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
