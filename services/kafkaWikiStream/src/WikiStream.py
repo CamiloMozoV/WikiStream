@@ -1,3 +1,6 @@
+"""
+https://wikitech.wikimedia.org/wiki/Event_Platform/EventStreams#Python
+"""
 import json
 from sys import api_version
 from kafka import KafkaProducer
