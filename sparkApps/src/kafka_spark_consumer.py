@@ -15,6 +15,7 @@ from pyspark.sql.functions import (
     to_date,
     to_timestamp
 )
+from sparkApps import config
 
 def read_kafka_stream(spark_session: SparkSession) -> DataFrame:
     """Read the kafka topic `wikistream`."""
@@ -145,9 +146,9 @@ if __name__=="__main__":
                     .config("spark.sql.adaptive.enable", False)\
                     .getOrCreate()
     
-    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key", "testadmin")
-    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", "testadminpwd")
-    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "http://172.28.0.10:9000")
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.access.key", config.MINIO_ACCESS_KEY)
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.secret.key", config.MINIO_SECRET_KEY)
+    spark_sesion.sparkContext._jsc.hadoopConfiguration().set("fs.s3a.endpoint", config.MINIO_ENDPOY)
 
     spark_sesion.sparkContext.setLogLevel("WARN")
     kafka_spark_consumer(spark_sesion)

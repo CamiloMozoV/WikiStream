@@ -1,0 +1,3 @@
+MINIO_ACCESS_KEY="testadmin"
+MINIO_SECRET_KEY="testadminpwd"
+MINIO_ENDPOY="http://172.28.0.10:9000"
